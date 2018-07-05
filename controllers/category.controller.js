@@ -13,15 +13,33 @@ exports.create = (req, res) => {
   })
 
   category.save().then((data) => {
-    return response.success(res, data, {});
+    response.success(res, data, {});
   }).catch( err => {
-    return error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
+    error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
   });
 };
 
 // Retrieve and return all notes from the database.
 exports.findAll = (req, res) => {
+  const limit = +req.query.limit || 10;
+  const offset = +req.query.offset || 0;
+  let total = 0;
+  Category.count().then(t => {
+    total = t;
+  });
 
+  Category.find().skip(offset).limit(limit)
+  .then(categories => {
+    console.log(categories);
+    const metadata = {
+      total: total,
+      limit: +limit,
+      offset: (+offset) + (+limit)
+    }
+    response.success(res, categories, metadata);
+  }).catch(err => {
+    error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
+  });
 };
 
 // Find a single note with a noteId
