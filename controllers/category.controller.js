@@ -77,7 +77,7 @@ exports.delete = (req, res) => {
     if(!category) {
       error.submit(res, error.ERRORTYPE.NOT_FOUND);
     }
-    res.send({message: "Note deleted successfully!"});
+    res.send({message: "Category deleted successfully!"});
   }).catch(err => {
     error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
   });

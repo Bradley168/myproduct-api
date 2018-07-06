@@ -112,7 +112,7 @@ exports.delete = (req, res) => {
         error.submit(res, error.ERRORTYPE.NOT_FOUND);
       }
       res.send({
-        message: "Note deleted successfully!"
+        message: "Product deleted successfully!"
       });
     }).catch(err => {
       error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
