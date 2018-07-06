@@ -2,7 +2,6 @@ const Category = require('../models/category.model.js');
 const error = require('../utils/error.util.js');
 const response = require('../utils/response.util.js');
 
-// Create and Save a new Note
 exports.create = (req, res) => {
   if (!req.body.category) {
     return error.submit(res, error.ERRORTYPE.BAD_REQUEST);
@@ -19,7 +18,6 @@ exports.create = (req, res) => {
   });
 };
 
-// Retrieve and return all notes from the database.
 exports.findAll = (req, res) => {
   const limit = +req.query.limit || 10;
   const offset = +req.query.offset || 0;
@@ -42,17 +40,45 @@ exports.findAll = (req, res) => {
   });
 };
 
-// Find a single note with a noteId
 exports.findOne = (req, res) => {
-
+  Category.findById(req.params.catId)
+  .then(category => {
+    if(!category) {
+      return error.submit(res, error.ERRORTYPE.NOT_FOUND);          
+    }
+    response.success(res, category, null);
+  }).catch(err => {
+    error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
+  });
 };
 
-// Update a note identified by the noteId in the request
 exports.update = (req, res) => {
+  // Validate Request
+  if(!req.body.category) {
+    return error.submit(res, error.ERRORTYPE.NOT_FOUND);
+  }
 
+  Category.findByIdAndUpdate(req.params.catId, {
+    title: req.body.category || "unknown",
+  }, {new: true})
+  .then(category => {
+    if(!category) {
+      return error.submit(res, error.ERRORTYPE.NOT_FOUND);
+    }
+    response.success(res, category, null);
+  }).catch(err => {
+    error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
+  });
 };
 
-// Delete a note with the specified noteId in the request
 exports.delete = (req, res) => {
-
+  Category.findByIdAndRemove(req.params.catId)
+  .then(category => {
+    if(!category) {
+      error.submit(res, error.ERRORTYPE.NOT_FOUND);
+    }
+    res.send({message: "Note deleted successfully!"});
+  }).catch(err => {
+    error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
+  });
 };

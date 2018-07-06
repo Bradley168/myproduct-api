@@ -10,4 +10,6 @@ module.exports = (app) => {
   app.put('/products/:proId', products.update);
 
   app.delete('/products/:proId', products.delete);
+
+  app.get('/categories/:catId/products', products.findByCategory);
 }
