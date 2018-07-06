@@ -26,6 +26,6 @@ require('./routes/category.route.js')(app);
 require('./routes/product.route.js')(app);
 
 
-app.listen(1080, () => {
+app.listen(3000, () => {
   console.log('server running on port 1080.');
 });
