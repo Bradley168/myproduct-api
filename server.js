@@ -19,7 +19,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
-  return res.status(200).send({message: 'request: ' + (req.query.name || 'unknown')});
+  return res.status(200).send({message: 'Pathmazing product test.'});
 });
 
 require('./routes/category.route.js')(app);
