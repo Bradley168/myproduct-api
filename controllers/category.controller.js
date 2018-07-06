@@ -26,7 +26,7 @@ exports.findAll = (req, res) => {
     total = t;
   });
 
-  Category.find().skip(offset).limit(limit)
+  Category.find().skip(offset).limit(limit).select(["_id", "category"])
   .then(categories => {
     console.log(categories);
     const metadata = {
@@ -41,7 +41,7 @@ exports.findAll = (req, res) => {
 };
 
 exports.findOne = (req, res) => {
-  Category.findById(req.params.catId)
+  Category.findById(req.params.catId).select(["_id", "category"])
   .then(category => {
     if(!category) {
       return error.submit(res, error.ERRORTYPE.NOT_FOUND);          

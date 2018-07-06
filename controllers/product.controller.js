@@ -29,7 +29,7 @@ exports.findAll = (req, res) => {
     total = t;
   });
 
-  Product.find().skip(offset).limit(limit)
+  Product.find().skip(offset).limit(limit).select(["_id", "ProductName", "Quantity", "Price", "CategoryId"])
     .then(products => {
       console.log(products);
       const metadata = {
@@ -55,7 +55,7 @@ exports.findByCategory = (req, res) => {
 
   Product.find({
       CategoryId: req.params.catId
-    }).skip(offset).limit(limit)
+    }).skip(offset).limit(limit).select(["_id", "ProductName", "Quantity", "Price", "CategoryId"])
     .then(products => {
       console.log(products);
       const metadata = {
@@ -70,7 +70,7 @@ exports.findByCategory = (req, res) => {
 };
 
 exports.findOne = (req, res) => {
-  Product.findById(req.params.proId)
+  Product.findById(req.params.proId).select(["_id", "ProductName", "Quantity", "Price", "CategoryId"])
     .then(product => {
       if (!product) {
         return error.submit(res, error.ERRORTYPE.NOT_FOUND);
