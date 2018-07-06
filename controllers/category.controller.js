@@ -59,7 +59,7 @@ exports.update = (req, res) => {
   }
 
   Category.findByIdAndUpdate(req.params.catId, {
-    title: req.body.category || "unknown",
+    category: req.body.category || "unknown",
   }, {new: true})
   .then(category => {
     if(!category) {
