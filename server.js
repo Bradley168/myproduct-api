@@ -25,7 +25,7 @@ app.get('/', (req, res) => {
 require('./routes/category.route.js')(app);
 require('./routes/product.route.js')(app);
 
-
-app.listen(3000, () => {
-  console.log('server running on port 1080.');
+const port = process.env.PORT || 5000;
+app.listen(port, () => {
+  console.log('server running on port: ', port);
 });
