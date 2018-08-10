@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+// import * as mongoose from 'mongoose';
 
 const CategorySchema = mongoose.Schema( {
   category: String

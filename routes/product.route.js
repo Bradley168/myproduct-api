@@ -1,15 +1,17 @@
 module.exports = (app) => {
   const products = require('../controllers/product.controller.js');
+  const {
+    version
+  } = require('../package.json');
 
-  app.post('/products', products.create);
+  app.post(`/v${version}/products`, products.create);
+  app.get(`/v${version}/products`, products.getProductList);
 
-  app.get('/products', products.findAll);
+  app.get(`/v${version}/products/:proId`, products.getProductById);
 
-  app.get('/products/:proId', products.findOne);
+  app.put(`/v${version}/products/:proId`, products.update);
 
-  app.put('/products/:proId', products.update);
+  app.delete(`/v${version}/products/:proId`, products.delete);
 
-  app.delete('/products/:proId', products.delete);
-
-  app.get('/categories/:catId/products', products.findByCategory);
+  app.get(`/v${version}/categories/:catId/products`, products.getProductByCategoryId);
 }

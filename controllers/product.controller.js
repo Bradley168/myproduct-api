@@ -1,120 +1,149 @@
 const Product = require('../models/product.model.js');
+const Category = require('../models/category.model.js');
 const error = require('../utils/error.util.js');
 const response = require('../utils/response.util.js');
+const assert = require('assert');
 
-exports.create = (req, res) => {
-  if (!(req.body.name && req.body.quantity && req.body.price && req.body.catId)) {
-    return error.submit(res, error.ERRORTYPE.BAD_REQUEST);
+exports.create = async (req, res) => {
+  try {
+    if (!(req.body.name && req.body.quantity && req.body.price && req.body.catId))
+      assert(false, "Missing some fields.");
+    if (!Number.isInteger(req.body.quantity))
+      assert(false, "Quantity should be integer.");
+    if (req.body.quantity < 0)
+      assert(false, "Quantity must greater than or equal zero.");
+    if (req.body.price <= 0)
+      assert(false, "Price must be greater than zero.");
+    if (!req.body.catId.match(/^[0-9a-fA-F]{24}$/))
+      assert(false, "Category ID is incorrect.");
+
+    const category = await Category.findById(req.body.catId);
+    if (!category)
+      assert(false, "Category not found.");
+
+    const product = new Product({
+      productName: req.body.name,
+      quantity: req.body.quantity,
+      price: req.body.price,
+      categoryId: req.body.catId,
+    })
+    const data = await product.save();
+    if (!data) assert(false, "Failed to save product.");
+    return response.successDetail(res, data);
+  } catch (err) {
+    return error.submit(res, err.message);
+  }
+};
+
+exports.getProductList = async (req, res) => {
+  try {
+    const limit = +req.query.limit || 10;
+    const offset = +req.query.offset || 0;
+    if (limit < 0 || offset < 0) assert(false, "Invalid limit or offset.");
+    const [total, products] = await Promise.all([
+      Product.countDocuments(),
+      Product.find().skip(offset).limit(limit).select(["_id", "productName", "quantity", "price", "categoryId"])
+    ]);
+    const metadata = {
+      total: total,
+      limit: limit,
+      offset: offset
+    }
+    return response.success(res, products, metadata);
+  } catch (err) {
+    return error.submit(res, err.message);
+  }
+};
+
+exports.getProductByCategoryId = async (req, res) => {
+  try {
+    const limit = +req.query.limit || 10;
+    const offset = +req.query.offset || 0;
+    if (limit < 0 || offset < 0) assert(false, "Invalid limit or offset.");
+    if (!req.params.catId.match(/^[0-9a-fA-F]{24}$/))
+      assert(false, "Category ID is incorrect.");
+
+    const [total, products] = await Promise.all([
+      Product.countDocuments({
+        categoryId: req.params.catId
+      }),
+      Product.find({
+        categoryId: req.params.catId
+      }).skip(offset).limit(limit).select(["_id", "productName", "quantity", "price", "categoryId"])
+    ]);
+    if (!products) assert(false, "Product not found.");
+    const metadata = {
+      total: total,
+      limit: limit,
+      offset: offset
+    }
+    return response.success(res, products, metadata);
+
+  } catch (err) {
+    return error.submit(res, err.message);
   }
 
-  const product = new Product({
-    ProductName: req.body.name || 'Unknow',
-    Quantity: req.body.quantity || 0,
-    Price: req.body.price || 0,
-    CategoryId: req.body.catId || 0,
-  })
-
-  product.save().then((data) => {
-    response.success(res, data, {});
-  }).catch(err => {
-    error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
-  });
 };
 
-exports.findAll = (req, res) => {
-  const limit = +req.query.limit || 10;
-  const offset = +req.query.offset || 0;
-  let total = 0;
-  Product.count().then(t => {
-    total = t;
-  });
+exports.getProductById = async (req, res) => {
+  try {
+    if (!req.params.proId.match(/^[0-9a-fA-F]{24}$/))
+      assert(false, "Product ID is incorrect.");  
 
-  Product.find().skip(offset).limit(limit).select(["_id", "ProductName", "Quantity", "Price", "CategoryId"])
-    .then(products => {
-      console.log(products);
-      const metadata = {
-        total: total,
-        limit: +limit,
-        offset: (+offset) + (+limit)
-      }
-      response.success(res, products, metadata);
-    }).catch(err => {
-      error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
-    });
-};
-
-exports.findByCategory = (req, res) => {
-  const limit = +req.query.limit || 10;
-  const offset = +req.query.offset || 0;
-  let total = 0;
-  Product.count({
-    CategoryId: req.params.catId
-  }).then(t => {
-    total = t;
-  });
-
-  Product.find({
-      CategoryId: req.params.catId
-    }).skip(offset).limit(limit).select(["_id", "ProductName", "Quantity", "Price", "CategoryId"])
-    .then(products => {
-      console.log(products);
-      const metadata = {
-        total: total,
-        limit: +limit,
-        offset: (+offset) + (+limit)
-      }
-      response.success(res, products, metadata);
-    }).catch(err => {
-      error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
-    });
-};
-
-exports.findOne = (req, res) => {
-  Product.findById(req.params.proId).select(["_id", "ProductName", "Quantity", "Price", "CategoryId"])
-    .then(product => {
-      if (!product) {
-        return error.submit(res, error.ERRORTYPE.NOT_FOUND);
-      }
-      response.success(res, product, null);
-    }).catch(err => {
-      error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
-    });
-};
-
-exports.update = (req, res) => {
-  // Validate Request
-  if (!(req.body.name && req.body.quantity && req.body.price && req.body.catId)) {
-    return error.submit(res, error.ERRORTYPE.BAD_REQUEST);
+    const product = await Product.findById(req.params.proId).select(["_id", "productName", "quantity", "price", "categoryId"]);
+    if (!product) assert(false, "Product not found.");
+    return response.successDetail(res, product);
+  } catch (err) {
+    return error.submit(res, err.message);
   }
+};
 
-  Product.findByIdAndUpdate(req.params.proId, {
-      ProductName: req.body.name || 'Unknow',
-      Quantity: req.body.quantity || 0,
-      Price: req.body.price || 0,
-      CategoryId: req.body.catId || 0,
+exports.update = async (req, res) => {
+  try {
+    if (!(req.body.name && req.body.quantity && req.body.price && req.body.catId))
+      assert(false, "Missing some fields.");
+    if (!Number.isInteger(req.body.quantity))
+      assert(false, "Quantity should be integer.");
+    if (req.body.quantity < 0)
+      assert(false, "Quantity must greater than or equal zero.");
+    if (req.body.price <= 0)
+      assert(false, "Price must be greater than zero.");
+    if (!req.body.catId.match(/^[0-9a-fA-F]{24}$/))
+      assert(false, "Category ID is incorrect.");
+    if (!req.params.proId.match(/^[0-9a-fA-F]{24}$/))
+      assert(false, "Product ID is incorrect.");
+
+    const category = await Category.findById(req.body.catId);
+    if (!category)
+      assert(false, "Category not found.");
+
+    const product = await Product.findByIdAndUpdate(req.params.proId, {
+      productName: req.body.name,
+      quantity: req.body.quantity,
+      price: req.body.price,
+      categoryId: req.body.catId,
     }, {
       new: true
-    })
-    .then(product => {
-      if (!product) {
-        return error.submit(res, error.ERRORTYPE.NOT_FOUND);
-      }
-      response.success(res, product, null);
-    }).catch(err => {
-      error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
     });
+    if (!product) assert(false, "Product not found.");
+    return response.successDetail(res, product);
+  } catch (err) {
+    return error.submit(res, err.message);
+  }
+
 };
 
-exports.delete = (req, res) => {
-  Product.findByIdAndRemove(req.params.proId)
-    .then(product => {
-      if (!product) {
-        error.submit(res, error.ERRORTYPE.NOT_FOUND);
-      }
-      res.send({
-        message: "Product deleted successfully!"
-      });
-    }).catch(err => {
-      error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
+exports.delete = async (req, res) => {
+  try {
+    if (!req.params.proId.match(/^[0-9a-fA-F]{24}$/))
+      assert(false, "Product ID is incorrect.");
+    const product = await Product.findByIdAndRemove(req.params.proId);
+    if (!product) assert(false, "Product not found.");
+    return res.send({
+      message: "Product deleted successfully!"
     });
+  } catch (err) {
+    return error.submit(res, err.message);
+  }
+
 };

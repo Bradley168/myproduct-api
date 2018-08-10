@@ -1,13 +1,15 @@
 module.exports = (app) => {
   const categories = require('../controllers/category.controller.js');
+  const {
+    version
+  } = require('../package.json');
 
-  app.post('/categories', categories.create);
+  app.post(`/v${version}/categories`, categories.create);
 
-  app.get('/categories', categories.findAll);
+  app.get(`/v${version}/categories`, categories.getCategoryList);
 
-  app.get('/categories/:catId', categories.findOne);
+  app.get(`/v${version}/categories/:catId`, categories.getCategoryById);
+  app.put(`/v${version}/categories/:catId`, categories.update);
 
-  app.put('/categories/:catId', categories.update);
-
-  app.delete('/categories/:catId', categories.delete);
+  app.delete(`/v${version}/categories/:catId`, categories.delete);
 }

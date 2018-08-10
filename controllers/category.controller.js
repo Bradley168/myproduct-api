@@ -1,84 +1,90 @@
 const Category = require('../models/category.model.js');
 const error = require('../utils/error.util.js');
 const response = require('../utils/response.util.js');
+const assert = require('assert');
 
-exports.create = (req, res) => {
-  if (!req.body.category) {
-    return error.submit(res, error.ERRORTYPE.BAD_REQUEST);
+exports.create = async (req, res) => {
+  try {
+    if (!req.body.category) {
+      assert(false, "Invalid category value.");
+    }
+    const category = new Category({
+      category: req.body.category
+    });
+    const data = await category.save();
+    return response.successDetail(res, data);
+
+  } catch (err) {
+    return error.submit(res, err.message);
   }
 
-  const category = new Category({
-    category: req.body.category || 'Unknow category'
-  })
-
-  category.save().then((data) => {
-    response.success(res, data, {});
-  }).catch( err => {
-    error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
-  });
 };
 
-exports.findAll = (req, res) => {
-  const limit = +req.query.limit || 10;
-  const offset = +req.query.offset || 0;
-  let total = 0;
-  Category.count().then(t => {
-    total = t;
-  });
+exports.getCategoryList = async (req, res) => {
+  try {
+    const limit = +req.query.limit || 10;
+    const offset = +req.query.offset || 0;
+    if (limit < 0 || offset < 0) assert(false, "Invalid limit or offset.");
 
-  Category.find().skip(offset).limit(limit).select(["_id", "category"])
-  .then(categories => {
-    console.log(categories);
+    const [total, categories] = await Promise.all([
+      Category.countDocuments(),
+      Category.find().skip(offset).limit(limit).select(["_id", "category"])
+    ]);
+
     const metadata = {
-      total: total,
-      limit: +limit,
-      offset: (+offset) + (+limit)
+      total,
+      limit,
+      offset
     }
-    response.success(res, categories, metadata);
-  }).catch(err => {
-    error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
-  });
-};
+    return response.success(res, categories, metadata);
 
-exports.findOne = (req, res) => {
-  Category.findById(req.params.catId).select(["_id", "category"])
-  .then(category => {
-    if(!category) {
-      return error.submit(res, error.ERRORTYPE.NOT_FOUND);          
-    }
-    response.success(res, category, null);
-  }).catch(err => {
-    error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
-  });
-};
-
-exports.update = (req, res) => {
-  // Validate Request
-  if(!req.body.category) {
-    return error.submit(res, error.ERRORTYPE.NOT_FOUND);
+  } catch (err) {
+    return error.submit(res, err.message);
   }
 
-  Category.findByIdAndUpdate(req.params.catId, {
-    category: req.body.category || "unknown",
-  }, {new: true})
-  .then(category => {
-    if(!category) {
-      return error.submit(res, error.ERRORTYPE.NOT_FOUND);
-    }
-    response.success(res, category, null);
-  }).catch(err => {
-    error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
-  });
 };
 
-exports.delete = (req, res) => {
-  Category.findByIdAndRemove(req.params.catId)
-  .then(category => {
-    if(!category) {
-      error.submit(res, error.ERRORTYPE.NOT_FOUND);
-    }
-    res.send({message: "Category deleted successfully!"});
-  }).catch(err => {
-    error.submit(res, error.ERRORTYPE.UNKNOWN, err.message);
-  });
+exports.getCategoryById = async (req, res) => {
+  try {
+    if (!req.params.catId.match(/^[0-9a-fA-F]{24}$/))
+      assert(false, "Category ID is incorrect.");
+    const category = await Category.findById(req.params.catId).select(["_id", "category"]);
+    if (!category) assert(false, "Category not found.");
+    return response.successDetail(res, category);
+  } catch (err) {
+    return error.submit(res, err.message);
+  }
+};
+
+exports.update = async (req, res) => {
+  try {
+    if (!req.body.category) assert(false, 'Invalid category field.');
+    if (!req.params.catId.match(/^[0-9a-fA-F]{24}$/))
+      assert(false, "Category ID is incorrect.");
+    const category = await Category.findByIdAndUpdate(req.params.catId, {
+      category: req.body.category
+    }, {
+      new: true
+    });
+    if (!category) assert(false, "Category not found.");
+    return response.successDetail(res, category);
+  } catch (err) {
+    return error.submit(res, err.message);
+  }
+
+};
+
+exports.delete = async (req, res) => {
+  try {
+    if (!req.params.catId.match(/^[0-9a-fA-F]{24}$/))
+      assert(false, "Category ID is incorrect.");
+    const category = await Category.findByIdAndRemove(req.params.catId);
+    if (!category) assert(false, 'Category not found.');
+    return res.send({
+      message: "Category deleted successfully!"
+    });
+  } catch (err) {
+    error.submit(res, err.message);
+  }
+
 };
